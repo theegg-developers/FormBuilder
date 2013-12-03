@@ -1,6 +1,6 @@
 <?php namespace TheEgg\FormBuilder;
 
-class Form{
+class Form {
   public $object;
   protected $buffer;
   protected $parent_prefix;
@@ -13,13 +13,6 @@ class Form{
     $this->relation = isset($options['relation'])? $options['relation'] : null;
     $this->parent_prefix = isset($options['parent_prefix']) ? $options['parent_prefix'] : null;
     $this->item_number = isset($options['item_number']) ? $options['item_number'] : null;
-  }
-
-  function link_to_add($relation_name, $title){
-    $item = new \stdClass();
-    $form = new Form(array($item, 'parent_prefix'=>$this->prefix(), 'item_number'=> 'placeholder-item-number'));
-    $blueprint = $this->getBlueprint($relation_name);    
-    $this->addMarkup('<a href="#" class="js-add-nested-fields btn" data-relation="'.$relation_name.'" data-blueprint="'.htmlspecialchars($blueprint($form)).'"><i class="icon-plus-sign"></i> '.$title.' </a>');
   }
 
   function fields_for($relation_name, $items, $callback){
@@ -51,59 +44,64 @@ class Form{
     return $this->blueprints[$relation_name];
   }
 
+  function link_to_add($relation_name, $title){
+    $item = new \stdClass();
+    $form = new Form(array($item, 'parent_prefix'=>$this->prefix(), 'item_number'=> 'placeholder-item-number'));
+    $blueprint = $this->getBlueprint($relation_name);    
+    $this->addMarkup('<a href="#" class="js-add-nested-fields btn" data-relation="'.$relation_name.'" data-blueprint="'.htmlspecialchars($blueprint($form)).'"><i class="fa fa-plus-circle"></i> '.$title.' </a>');
+  }
+
   function link_to_remove($title){
-    $this->addMarkup('<a href="#" class="js-remove-nested-fields offset2"><i class="icon-trash"></i> '.$title.'</a>');
+    $this->addMarkup('<a href="#" class="js-remove-nested-fields pull-right"><i class="fa fa-trash-o"></i> '.$title.'</a>');
   }
 
 
   //@todo: markup in a different file (a view) and dependency injection of views
   function text_input($label, $field, $options = array()){
-    $options = array_merge($options, array('class'=>'form-control'));
-    $this->addMarkupWithLabel($label, $field, \Form::text($this->prefixed_field($field), $this->field_value($field), $options));
+    $markup = \Form::text($this->prefixed_field($field), $this->field_value($field), $options);
+    return $markup;
   }
 
   function file_input($label, $field, $options = array()){
-    $this->addMarkupWithLabel($label, $field, \Form::file($this->prefixed_field($field)));
+    $markup = \Form::file($this->prefixed_field($field), $options);
+    return $markup;
   }
 
   function textarea_input($label, $field, $options = array()){
-    $options = array_merge($options, array('class'=>'form-control'));
-    $this->addMarkupWithLabel($label, $field, \Form::textarea($this->prefixed_field($field), $this->field_value($field), $options));
+    $markup = \Form::textarea($this->prefixed_field($field), $this->field_value($field), $options);
+    return $markup;
   }
 
   function date_input($label, $field, $options= array()){
-    $options = array_merge($options, array('class'=>'datepicker'));
-    $markup = '<input class="form-control" type="date" name="' . $this->prefixed_field($field) . '" value="' . $this->field_value($field) . '">';
-    $this->addMarkupWithLabel($label, $field, $markup);
+    $markup = \Form::input('date', $this->prefixed_field($field), $this->field_value($field), $options);
+    return $markup;
   }
 
   function number_input($label, $field, $options= array()){
-    $markup = '<input class="form-control" type="number" name="' . $this->prefixed_field($field) . '" value="' . $this->field_value($field) . '">';
-    $this->addMarkupWithLabel($label, $field, $markup);
+    $markup = \Form::input('number', $this->prefixed_field($field), $this->field_value($field), $options);
+    return $markup;
   }
 
   function time_input($label, $field, $options=array()){
-    $options = array_merge($options, array('class'=>'datepicker'));
-    $markup = '<input type="time" name="' . $this->prefixed_field($field) . '" value="' . $this->field_value($field) . '">';
-    $this->addMarkupWithLabel($label, $field, $markup);
+    $markup = \Form::input('time', $this->prefixed_field($field), $this->field_value($field), $options);
+    return $markup;
   }
 
   function password_input($label, $field, $options = array()){
-    $this->addMarkupWithLabel($label, $field, \Form::password($this->prefixed_field($field), $options));
+    $markup = \Form::password($this->prefixed_field($field), $options);
+    return $markup;
   }
 
-  protected function field_value($field){
-    if(isset($this->object->$field))
-      return $this->object->$field;
-    return null;
-  }
-
-  function select_input($label, $field, $options=array()){
-    $value = isset($options['value'])? $options['value'] : $this->field_value($field);
-    $collection = $options['collection'];
+  function select_input($label, $field, $list, $options=array()){
     if(isset($options['allow_blank']))
-      $collection = array_merge(array(''), $collection);
-    $this->addMarkupWithLabel($label, $field, \Form::select($this->prefixed_field($field), $collection, $value));
+      $list = array_merge(array(''), $list);
+    $markup = \Form::select($this->prefixed_field($field), $list, $this->field_value($field), $options);
+    return $markup;
+  }
+
+  function label($name, $field, $options = array()) {
+    $markup = \Form::label($this->prefixed_field($field), $name, $options);
+    return $markup;
   }
 
   function addMarkupWithLabel($label, $field, $input_string){
@@ -121,7 +119,8 @@ class Form{
       unset($options['value']);
     }
     else $value = $this->field_value($field);
-    $this->addMarkup(\Form::hidden($this->prefixed_field($field), $value, $options));
+    $markup = \Form::hidden($this->prefixed_field($field), $value, $options);
+    return $markup;
   }
 
   function addMarkup($text){
@@ -144,5 +143,11 @@ class Form{
 
   private function objectName(){
     return \Illuminate\Support\Str::snake(get_class($this->object));
+  }
+
+  protected function field_value($field){
+    if(isset($this->object->$field))
+      return $this->object->$field;
+    return null;
   }
 }
