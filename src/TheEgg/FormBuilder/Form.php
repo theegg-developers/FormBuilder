@@ -15,8 +15,8 @@ class Form {
     $this->item_number = isset($options['item_number']) ? $options['item_number'] : null;
   }
 
-  function fields_for($relation_name, $items, $callback){
-    $this->saveBlueprint($relation_name, $callback);
+  function fields_for($relation_name, $items, $callback, $options=array()){
+    $this->saveBlueprint($relation_name, $callback, $options);
     $blueprint = $this->getBlueprint($relation_name);
     $this->addMarkup('<div class="nested-fields">');
     $i = 0;
@@ -28,15 +28,15 @@ class Form {
     $this->addMarkup('</div>');
   }
 
-  private function saveBlueprint($relation_name, $callback){
+  private function saveBlueprint($relation_name, $callback, $options){
     $this->blueprints[$relation_name] = 
-      function($form) use($callback, $relation_name){
+      function($form) use($callback, $relation_name, $options){
         $callback($form);
         if(isset($form->object->id)){
           $form->hidden_input('id',array('class'=>'js-nested-fields-id'));
           $form->hidden_input('_destroy', array('value'=>0, 'class'=> 'js-nested-fields-destroy'));
         }
-        return '<div class="nested-fields-group '.$relation_name.'">' . $form->getBuffer() . '</div>';
+        return '<div class="nested-fields-group row '.$relation_name.'">' . $form->getBuffer() . '</div>';
       };
   }
 
@@ -44,15 +44,21 @@ class Form {
     return $this->blueprints[$relation_name];
   }
 
-  function link_to_add($relation_name, $title){
+  function link_to_add($relation_name, $title, $options = array()){
     $item = new \stdClass();
     $form = new Form(array($item, 'parent_prefix'=>$this->prefix(), 'item_number'=> 'placeholder-item-number'));
-    $blueprint = $this->getBlueprint($relation_name);    
-    $this->addMarkup('<a href="#" class="js-add-nested-fields btn" data-relation="'.$relation_name.'" data-blueprint="'.htmlspecialchars($blueprint($form)).'"><i class="fa fa-plus-circle"></i> '.$title.' </a>');
+    $blueprint = $this->getBlueprint($relation_name);
+
+    $options['class'] = array_key_exists('class', $options) ? 'js-add-nested-fields '. $options['class'] : $options['class'];
+    $options['data-relation'] = $relation_name;
+    $options['data-blueprint'] = htmlspecialchars($blueprint($form));
+
+    $this->addMarkup('<a href="#"'.app('html')->attributes($options).'>'.$title.'</a>');
   }
 
-  function link_to_remove($title){
-    $this->addMarkup('<a href="#" class="js-remove-nested-fields pull-right"><i class="fa fa-trash-o"></i> '.$title.'</a>');
+  function link_to_remove($title, $options = array()){
+    $options['class'] = array_key_exists('class', $options) ? 'js-remove-nested-fields '. $options['class'] : $options['class'];
+    $this->addMarkup('<a href="#"'.app('html')->attributes($options).'>'.$title.'</a>');
   }
 
 
