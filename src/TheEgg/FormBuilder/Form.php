@@ -22,7 +22,8 @@ class Form {
     $i = 0;
     foreach($items as $item){
       $nested_form = new Form(array($item, 'parent_prefix'=>$this->prefix(), 'item_number'=>$i, 'relation'=>$relation_name));
-      $this->addMarkup($blueprint($nested_form));
+      $markup = $blueprint($nested_form);
+      $this->addMarkup($markup);
       $i++;
     }
     $this->addMarkup('</div>');
@@ -33,10 +34,11 @@ class Form {
       function($form) use($callback, $relation_name, $options){
         $callback($form);
         if(isset($form->object->id)){
-          $form->hidden_input('id',array('class'=>'js-nested-fields-id'));
-          $form->hidden_input('_destroy', array('value'=>0, 'class'=> 'js-nested-fields-destroy'));
+          $form->addMarkup($form->hidden_input('id',array('value' => $form->object->id, 'class'=>'js-nested-fields-id')));
+          $form->addMarkup($form->hidden_input('_destroy', array('value'=>0, 'class'=> 'js-nested-fields-destroy')));
         }
-        return '<div class="nested-fields-group row '.$relation_name.'">' . $form->getBuffer() . '</div>';
+        $output = '<div class="nested-fields-group row '.snake_case($relation_name) .'">' . $form->getBuffer() . '</div>';
+        return $output;
       };
   }
 
@@ -46,10 +48,10 @@ class Form {
 
   function link_to_add($relation_name, $title, $options = array()){
     $item = new \stdClass();
-    $form = new Form(array($item, 'parent_prefix'=>$this->prefix(), 'item_number'=> 'placeholder-item-number'));
+    $form = new Form(array($item, 'parent_prefix'=>$this->prefix(), 'item_number'=> 'placeholder-item-number', 'relation' => $relation_name));
     $blueprint = $this->getBlueprint($relation_name);
 
-    $options['class'] = array_key_exists('class', $options) ? 'js-add-nested-fields '. $options['class'] : $options['class'];
+    $options['class'] = array_key_exists('class', $options) ? 'js-add-nested-fields '. $options['class'] : 'js-add-nested-fields ';
     $options['data-relation'] = $relation_name;
     $options['data-blueprint'] = htmlspecialchars($blueprint($form));
 
@@ -57,10 +59,10 @@ class Form {
   }
 
   function link_to_remove($title, $options = array()){
-    $options['class'] = array_key_exists('class', $options) ? 'js-remove-nested-fields '. $options['class'] : $options['class'];
+
+    $options['class'] = array_key_exists('class', $options) ? 'js-remove-nested-fields '. $options['class'] : 'js-remove-nested-fields ';
     $this->addMarkup('<a href="#"'.app('html')->attributes($options).'>'.$title.'</a>');
   }
-
 
   //@todo: markup in a different file (a view) and dependency injection of views
   function text_input($label, $field, $options = array()){
@@ -110,14 +112,6 @@ class Form {
     return $markup;
   }
 
-  function addMarkupWithLabel($label, $field, $input_string){
-    $this->addMarkup(
-    '<div class="control-group">'.
-    \Form::label($this->prefixed_field($field), $label, array('class'=>'control-label')).
-    '<div class="controls">'.$input_string.
-    '</div></div>');
-  }
-
   function hidden_input($field, $options=array()){
     $value = '';
     if(isset($options['value'])){
@@ -140,7 +134,8 @@ class Form {
   protected function prefix(){
     if(! $this->parent_prefix)
       return $this->objectName();
-    return "{$this->parent_prefix}[{$this->relation}_attributes][{$this->item_number}]";
+    $relation = snake_case($this->relation);
+    return "{$this->parent_prefix}[{$relation}_attributes][{$this->item_number}]";
   }
 
   protected function prefixed_field($field){
