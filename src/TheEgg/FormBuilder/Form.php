@@ -95,7 +95,7 @@ class Form {
     return $markup;
   }
 
-  function checkbox_input($label, $field, $value = 1, $checked = null, $options = array()) {
+  function checkbox_input($label, $field, $options = array()) {
     $value = $this->field_value($field);
     $checked = $value ? true : false;
     $markup = \Form::checkbox($this->prefixed_field($field), $this->field_value($field), $checked, $options);
