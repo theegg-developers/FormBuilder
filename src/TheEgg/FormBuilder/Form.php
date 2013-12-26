@@ -95,6 +95,13 @@ class Form {
     return $markup;
   }
 
+  function checkbox_input($label, $field, $value = 1, $checked = null, $options = array()) {
+    $value = $this->field_value($field);
+    $checked = $value ? true : false;
+    $markup = \Form::checkbox($this->prefixed_field($field), $this->field_value($field), $checked, $options);
+    return $markup;
+  }
+
   function password_input($label, $field, $options = array()){
     $markup = \Form::password($this->prefixed_field($field), $options);
     return $markup;
